@@ -1,5 +1,6 @@
 package com.udacity.asteroidradar.main
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -11,8 +12,18 @@ import com.udacity.asteroidradar.api.AsteroidApi
 import com.udacity.asteroidradar.api.parseAsteroidsJsonResult
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.lang.Exception
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainViewModel : ViewModel() {
+
+    companion object {
+        const val TAG = "MainViewModel"
+        const val SEVEN_DAYS_MILLIS = 604800000L
+    }
+
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
 
     private val _asteroids = MutableLiveData<List<Asteroid>>()
     val asteroids: LiveData<List<Asteroid>>
@@ -23,32 +34,44 @@ class MainViewModel : ViewModel() {
         get() = _pictureOfDay
 
     init {
-        val asteroid1 = Asteroid(1, "Sofia", "2021-05-11", 2400.0, 1200.0, 200.0, 12023.3, true)
-        val asteroid2 = Asteroid(1, "Haley", "2021-05-11", 2400.0, 1200.0, 200.0, 12023.3, false)
-        val asteroid3 = Asteroid(1, "Samantha", "2021-05-11", 2400.0, 1200.0, 200.0, 12023.3, true)
-        val asteroid4 = Asteroid(1, "Lela", "2021-05-11", 2400.0, 1200.0, 200.0, 12023.3, false)
-        val asteroid5 = Asteroid(1, "Lizzy", "2021-05-11", 2400.0, 1200.0, 200.0, 12023.3, true)
-        val asteroid6 = Asteroid(1, "Zippy", "2021-05-11", 2400.0, 1200.0, 200.0, 12023.3, true)
-        _asteroids.value = listOf(asteroid1, asteroid2, asteroid3, asteroid4, asteroid5, asteroid6)
-
         getPictureOfDay()
-        //getAsteroids("2015-09-07", "2015-09-09")
+        val todayDate = Date()
+        val sevenDaysDate = todayDate.time + SEVEN_DAYS_MILLIS
+        getAsteroids(dateFormat.format(todayDate), dateFormat.format(sevenDaysDate))
     }
 
-    fun onAsteroidNightClicked(asteroidId: Long) {
-        TODO("Not yet implemented")
+    private val _navigateToAsteroidDetail = MutableLiveData<Asteroid>()
+    val navigateToAsteroidDetail
+        get() = _navigateToAsteroidDetail
+
+    fun onAsteroidNightClicked(asteroidId: Asteroid) {
+        _navigateToAsteroidDetail.value = asteroidId
+    }
+
+    fun onAsteroidDetailNavigated() {
+        _navigateToAsteroidDetail.value = null
     }
 
     private fun getAsteroids(startDate: String, endDate: String) {
         viewModelScope.launch {
-            val jsonResult = AsteroidApi.retrofitService.getAsteroids(startDate, endDate, API_KEY)
-            _asteroids.value = parseAsteroidsJsonResult(jsonResult);
+            try {
+                val responseBody =
+                    AsteroidApi.retrofitService.getAsteroids(startDate, endDate, API_KEY)
+                val jsonObject = JSONObject(responseBody.string())
+                _asteroids.value = parseAsteroidsJsonResult(jsonObject)
+            } catch (e: Exception) {
+                e.message?.let { Log.d(TAG, it) }
+            }
         }
     }
 
     private fun getPictureOfDay() {
         viewModelScope.launch {
-            _pictureOfDay.value = AsteroidApi.retrofitService.getPictureOfDay(API_KEY)
+            try {
+                _pictureOfDay.value = AsteroidApi.retrofitService.getPictureOfDay(API_KEY)
+            } catch (e: Exception) {
+                e.message?.let { Log.d(TAG, it) }
+            }
         }
     }
 }
