@@ -6,7 +6,7 @@ import androidx.lifecycle.Transformations
 import com.udacity.asteroidradar.Asteroid
 import com.udacity.asteroidradar.Constants.API_KEY
 import com.udacity.asteroidradar.api.AsteroidApi
-import com.udacity.asteroidradar.api.NetworkAsteroidContainer
+import com.udacity.asteroidradar.api.AsteroidContainer
 import com.udacity.asteroidradar.api.asDatabaseModel
 import com.udacity.asteroidradar.api.parseAsteroidsJsonResult
 import com.udacity.asteroidradar.database.AsteroidsDatabase
@@ -14,8 +14,6 @@ import com.udacity.asteroidradar.database.asDomainModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import retrofit2.await
-import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -44,14 +42,11 @@ class AsteroidsRepository(private val database: AsteroidsDatabase) {
                 )
                 val jsonObject = JSONObject(asteroidsResponseString)
                 val asteroids = parseAsteroidsJsonResult(jsonObject)
-                val networkAsteroidContainer = NetworkAsteroidContainer(asteroids)
+                val networkAsteroidContainer = AsteroidContainer(asteroids)
                 database.asteroidDao.insertAll(*networkAsteroidContainer.asDatabaseModel())
             } catch (e: Exception) {
                 Log.e(TAG, e.printStackTrace().toString())
             }
-
-
         }
     }
-
 }
