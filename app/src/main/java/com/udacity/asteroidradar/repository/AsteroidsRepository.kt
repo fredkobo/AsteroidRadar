@@ -14,6 +14,7 @@ import com.udacity.asteroidradar.database.asDomainModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.net.SocketTimeoutException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,7 +27,7 @@ class AsteroidsRepository(private val database: AsteroidsDatabase) {
     }
 
     val asteroids: LiveData<List<Asteroid>> =
-        Transformations.map(database.asteroidDao.getAsteroids()) {
+        Transformations.map(database.asteroidDao.getAsteroids(dateFormat.format(Date()))) {
             it.asDomainModel()
         }
 
@@ -44,6 +45,8 @@ class AsteroidsRepository(private val database: AsteroidsDatabase) {
                 val asteroids = parseAsteroidsJsonResult(jsonObject)
                 val networkAsteroidContainer = AsteroidContainer(asteroids)
                 database.asteroidDao.insertAll(*networkAsteroidContainer.asDatabaseModel())
+            } catch (e: SocketTimeoutException) {
+                refreshAsteroids()
             } catch (e: Exception) {
                 Log.e(TAG, e.printStackTrace().toString())
             }
